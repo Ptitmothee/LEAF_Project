@@ -1,0 +1,73 @@
+site_name: LEAF Benchmark Documentation
+site_description: Low Energy AI Framework & Benchmark for Code Generation and Execution
+site_author: LEAF Team
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: teal
+      accent: deep orange
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: teal
+      accent: deep orange
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [source]
+          options:
+            show_root_heading: true
+            show_source: true
+            heading_level: 2
+            docstring_style: google
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.arithmatex:
+      generic: true
+
+extra_javascript:
+  - javascripts/mathjax.js
+  - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js
+
+nav:
+  - Home: index.md
+  - Architecture: architecture.md
+  - API Reference:
+      - Core Configuration: reference/config.md
+      - Core Logging: reference/logging.md
+      - Physical Units: reference/units.md
+      - Domain Exceptions: reference/exceptions.md
+      - Data Schemas: reference/schemas.md
+      - Synthetic Datasets: reference/datasets.md
+      - Telemetry Analysis: reference/analysis.md
+      - CLI Interface: reference/cli.md
+

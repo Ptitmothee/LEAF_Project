@@ -52,11 +52,17 @@ data/datasets/
 data/cache/
 !data/README.md
 
-# Secrets, API tokens & local environment files
-.env
+# Local developer rules and private guidance (not tracked online)
+.gemini/
+*.local.md
+local/
+
 .env.*
 *.key
 *.pem
+
+# Documentation build output
+site/
 
 # IDEs & Editor configurations
 .vscode/
