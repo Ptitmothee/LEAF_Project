@@ -2,7 +2,12 @@
 
 ## Mission
 
-Gradually build a reproducible research tool that compares the energy cost of AI inference and generated-code execution across multiple local/cloud models, several prompting strategies, and three programming languages: Python, C++, and Java. The project must ingest annotated programming problems, query models, attempt to validate their solutions in an isolated environment, measure the costs that are available, analyze the results, and produce charts. It must compare older and newer datasets without claiming to demonstrate memorization based on problem age alone, and then provide an estimate of a human-only scenario.
+Gradually build a reproducible research tool that investigates the energy cost of AI-assisted programming, distinguishing:
+1. The energy cost of generating code using AI models (across local and cloud models and several prompting strategies).
+2. The energy cost of compiling and executing the generated code across three programming languages: Python, C++, and Java.
+3. The functional performance and correctness of the generated solutions.
+
+The primary research objective is to determine the energy cost of executing AI-generated programs as accurately as possible, while minimizing measurement bias introduced by the execution environment and measurement infrastructure. The project must ingest annotated programming problems, query models, validate solutions across two distinct workflows (hardened security validation and controlled native energy measurement), measure available costs, analyze results, compare older and newer datasets without claiming memorization on age alone, and compare with a human-only scenario.
 
 **Before implementing anything, read `PROJECT_PLAN.md` at the project root.** It contains the detailed scientific specifications, minimum schemas, development phases, tests, and initial references. This file contains the rules that remain active at all times. If a specific request conflicts with the scientific or security invariants below, flag the conflict before proceeding.
 
@@ -75,10 +80,16 @@ The benchmark must support the following prompting strategies, ordered by their 
 
 Log every call, code version, test, and feedback item. Evaluate the **cumulative cost required to obtain a correct solution**, as well as the cost per attempt and per submitted problem. Never send the reference solution or hidden tests to the model. Make strategies comparable through explicit budgets and document their differences.
 
-### Untrusted execution: mandatory security
+### Untrusted execution: separate security validation from energy measurement
 
 Generated code is untrusted. Never execute it directly in the orchestrator process. Use a sandbox (ideally a reproducible container) with an unprivileged user, limits on time/CPU/RAM/processes/output, networking disabled, a disposable temporary workspace, and no access to secrets, the home directory, the container engine socket, or sensitive host data. Do not install dependencies on the fly. On timeout, terminate the entire process group. Test infinite loops, crashes, OOM conditions, excessive output, forbidden file access, and network attempts. Never allow the agent to change the evaluator or reference tests.
 
+In order to balance security and energy measurement fidelity, we will separate them in the following way :
+
+- **A. Security validation (`sandbox/`):** execute generated code in hardened, disposable Docker containers and/or virtual machines with networking disabled, strict CPU/RAM/process/output limits, unprivileged user, and no access to secrets or host sockets. Test for infinite loops, crashes, memory bombs, unauthorized file access, and network attempts. Security validation runs are NOT used to produce main energy measurements.
+- **B. Energy measurement (`runner/`):** execute code in a controlled native environment (or minimal OS installation) to minimize virtualization and container overhead. Keep compilation, program execution, and environment setup separate. Calibrate idle consumption, repeat measurements, and report uncertainty.
+
+The security sandbox (`sandbox/`) and measurement runner (`runner/`) must remain logically separate.
 On Windows, verify that isolation is actually active: do not assume the IDE's sandbox automatically protects a program launched by your tool.
 
 ## Expected Architecture
@@ -88,7 +99,8 @@ Use Python primarily for orchestration and analysis. Maintain clear boundaries b
 - `datasets/`: collection, caching, normalization, and time-based cohorts;
 - `models/`: common adapter interface for local/cloud models;
 - `prompts/` and `generation/`: versioned prompts, attempts, and budgets;
-- `sandbox/`: extraction, compilation, and isolated execution for Python/C++/Java;
+- `sandbox/`: isolated execution in containers/VMs for security validation;
+- `runner/`: controlled native execution for energy experiments;
 - `measurement/`: energy, latency, idle power, and measurement quality;
 - `evaluation/`: tests, verdicts, and comparison against references;
 - `storage/`: SQLite initially, plus JSONL/CSV export;
@@ -105,19 +117,20 @@ Estimate separately: (a) the computer's electrical energy (active power × durat
 
 Follow the phases detailed in `PROJECT_PLAN.md`:
 
-0. repository inspection and plan;
-1. skeleton/CI/tests/configuration;
-2. schemas and a small synthetic dataset;
-3. sandbox and Python/C++/Java evaluator;
-4. calibration and energy measurement bench;
-5. first dataset connector;
-6. model adapters and telemetry;
-7. iteration strategies;
-8. end-to-end pilot;
-9. time-based cohorts;
-10. statistics and charts;
-11. human baseline;
-12. security, replication, and publication.
+0. repository reconnaissance and planning;
+1. project skeleton;
+2. data schemas and synthetic dataset;
+3. measurement environment investigation;
+4. security sandbox validation;
+5. native execution runner;
+6. energy measurement implementation;
+7. dataset integration;
+8. model adapters and inference accounting;
+9. prompting strategies and generation workflow;
+10. integrated pilot;
+11. main benchmark;
+12. human reference and overall analysis;
+13. replication and publication.
 
 Do not start with a large scraper, a complex UI, or expensive experiments. First make the synthetic, offline workflow reliable and tested.
 

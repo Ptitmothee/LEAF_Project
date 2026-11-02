@@ -2,6 +2,9 @@
 # LEAF Project - .gitignore
 # ==============================================================================
 
+# Discussion artifacts with AI agents
+Discussion-artifacts/
+
 # Python bytecode & cache
 __pycache__/
 *.py[cod]
