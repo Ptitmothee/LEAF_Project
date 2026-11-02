@@ -1,0 +1,44 @@
+# ==============================================================================
+# LEAF Benchmark - Default Configuration
+# ==============================================================================
+# This configuration file defines default parameters for reproducible benchmark runs.
+# IMPORTANT: Never include secrets, API keys, or private tokens in this file.
+
+experiment:
+  name: "pilot_baseline"
+  description: "Initial synthetic validation run comparing Python, C++, and Java"
+  repetitions: 3              # Repetitions to assess measurement variance
+  seed: 42                    # Random seed for reproducible sampling
+  dry_run: true               # If true, validates workflow without launching heavy workloads
+  allow_cloud_calls: false    # Mandatory safety switch: must be explicitly true for cloud APIs
+
+paths:
+  data_dir: "data"            # Root directory for input datasets and problem specs
+  results_dir: "results"      # Output directory for experimental runs, telemetry, and figures
+  artifacts_dir: "artifacts"  # Scratch space for compiled binaries and intermediate runner files
+
+budgets:
+  max_attempts_per_problem: 3       # Maximum refinement/correction attempts per strategy
+  max_tokens_per_attempt: 2048      # Maximum output token budget per model call
+  timeout_compilation_seconds: 30.0 # Compilation timeout for C++ and Java
+  timeout_execution_seconds: 10.0   # Per-test execution timeout to catch infinite loops
+  max_cost_usd_per_run: 1.00        # Safety spending ceiling for cloud API runs
+
+sandbox:
+  mode: "process"                   # Execution mode: "process" (local isolation) or "container"
+  memory_limit_mb: 512              # Maximum RAM allocated to a tested process
+  cpu_limit_seconds: 5.0            # CPU time limit per execution
+  allow_network: false              # Enforce network isolation during code execution
+  max_output_bytes: 65536           # Truncate standard output/error to prevent OOM/log flooding
+
+measurement:
+  sampling_interval_ms: 50          # Telemetry sampling interval in milliseconds
+  idle_calibration_seconds: 2.0     # Baseline system idle calibration period
+  record_cpu: true                  # Record process CPU user/system times and memory
+  record_gpu: true                  # Sample GPU power and memory via NVML when available
+
+supported_languages:
+  - "python"
+  - "cpp"
+  - "java"
+
