@@ -1,11 +1,27 @@
-"""Structured logging with automated secret sanitization for LEAF."""
+"""Structured logging with automated secret sanitization for LEAF.
+
+This module sets up uniform console and file logging across LEAF. It includes
+`SecretSanitizingFormatter`, a specialized logging formatter designed to
+intercept and mask API tokens, keys, and authorization headers to prevent
+credential leakage into benchmark logs and terminal outputs.
+
+Typical usage:
+    ```python
+    from leaf.core.logging import get_logger, setup_logging
+
+    setup_logging(level="DEBUG")
+    logger = get_logger("runner")
+    logger.info("Executing benchmark runner...")
+    ```
+"""
 
 import logging
 import re
 import sys
 from pathlib import Path
 
-# Regular expressions and replacements matching common API keys, tokens, and authorization credentials
+# Regular expressions and replacements matching common API keys, tokens, and authorization credentials.
+# Patterns match token prefixes and redact the sensitive body with '***REDACTED***'.
 _SECRET_PATTERNS = [
     (re.compile(r"(Bearer\s+)[A-Za-z0-9_\-\.]{12,}", re.IGNORECASE), r"\1***REDACTED***"),
     (
@@ -24,9 +40,22 @@ _SECRET_PATTERNS = [
 
 
 class SecretSanitizingFormatter(logging.Formatter):
-    """Logging formatter that automatically masks API keys and sensitive tokens."""
+    """Logging formatter that automatically masks API keys and sensitive tokens.
+
+    Scans the formatted log message across known credential patterns (OpenAI sk- keys,
+    Google AIza keys, HTTP Bearer tokens, generic api_key/secret definitions) and substitutes
+    redacted placeholders.
+    """
 
     def format(self, record: logging.LogRecord) -> str:
+        """Format the specified log record, redacting any detected credentials.
+
+        Args:
+            record: Standard Python LogRecord instance.
+
+        Returns:
+            The sanitized log message string.
+        """
         formatted = super().format(record)
         for pattern, replacement in _SECRET_PATTERNS:
             formatted = pattern.sub(replacement, formatted)
@@ -42,9 +71,12 @@ def setup_logging(
 ) -> logging.Logger:
     """Configure the root 'leaf' logger with structured formatting and secret sanitization.
 
+    Installs a console stream handler on stderr (and optionally a file handler)
+    using `SecretSanitizingFormatter`. Prevents duplicate handler attachment on repeated calls.
+
     Args:
-        level: Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL).
-        log_file: Optional path to write log output.
+        level: Logging verbosity level ('DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL').
+        log_file: Optional path to write persistent log output.
 
     Returns:
         Configured root logger for the 'leaf' namespace.
@@ -81,7 +113,14 @@ def setup_logging(
 
 
 def get_logger(name: str) -> logging.Logger:
-    """Obtain a child logger under the 'leaf' hierarchy."""
+    """Obtain a child logger under the 'leaf' hierarchy.
+
+    Args:
+        name: Name of the subsystem or module (e.g., 'cli', 'runner', 'measurement').
+
+    Returns:
+        A Logger instance prefixed with 'leaf.'.
+    """
     if not _LOGGER_INITIALIZED:
         setup_logging()
     if name.startswith("leaf"):

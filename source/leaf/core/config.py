@@ -1,4 +1,16 @@
-"""Configuration loading, typing, and validation for LEAF."""
+"""Configuration loading, typing, and validation for LEAF.
+
+This module provides strongly typed dataclass structures representing LEAF benchmark
+configurations, alongside parser and validation utilities for YAML configuration files.
+
+Typical usage:
+    ```python
+    from leaf.core.config import load_config
+
+    config = load_config("config/default_config.yaml")
+    print(config.experiment.name)
+    ```
+"""
 
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -11,7 +23,18 @@ from leaf.core.exceptions import ConfigError
 
 @dataclass
 class ExperimentConfig:
-    """Experiment metadata and execution modes."""
+    """Experiment metadata, modes, and reproducibility parameters.
+
+    Attributes:
+        name: Unique identifier for the experimental campaign.
+        description: Human-readable summary of the experiment's intent.
+        repetitions: Number of times each execution measurement is repeated
+            to compute dispersion and median metrics (minimum 1, recommended >= 3).
+        seed: Random seed used to ensure deterministic sampling across runs.
+        dry_run: When True, validates orchestration workflows without running
+            heavy workloads or calling chargeable APIs.
+        allow_cloud_calls: Explicit safety gate required to permit external API calls.
+    """
 
     name: str = "default_experiment"
     description: str = "Default LEAF benchmark configuration"
@@ -23,7 +46,13 @@ class ExperimentConfig:
 
 @dataclass
 class PathsConfig:
-    """Configured directory storage paths."""
+    """Configured filesystem storage directories for benchmark artifacts.
+
+    Attributes:
+        data_dir: Root directory for input datasets, problem statements, and reference tests.
+        results_dir: Output directory for experimental telemetry, logs, and exported charts.
+        artifacts_dir: Scratch space for intermediate compilation files and binaries.
+    """
 
     data_dir: Path = Path("data")
     results_dir: Path = Path("results")
@@ -32,7 +61,15 @@ class PathsConfig:
 
 @dataclass
 class BudgetsConfig:
-    """Resource and monetary budgets per problem/run."""
+    """Resource, iteration, and monetary budgets enforced during generation and execution.
+
+    Attributes:
+        max_attempts_per_problem: Maximum generation and correction attempts per strategy.
+        max_tokens_per_attempt: Output token generation ceiling per model call.
+        timeout_compilation_seconds: Maximum wall-clock time permitted for compiling C++/Java.
+        timeout_execution_seconds: Maximum wall-clock execution time per test before TLE.
+        max_cost_usd_per_run: Maximum allowed financial expenditure ceiling across the run.
+    """
 
     max_attempts_per_problem: int = 3
     max_tokens_per_attempt: int = 2048
@@ -43,7 +80,15 @@ class BudgetsConfig:
 
 @dataclass
 class SandboxConfig:
-    """Execution containment and resource restrictions."""
+    """Containment modes and resource limits for executing untrusted code.
+
+    Attributes:
+        mode: Isolation mechanism ('process' for local isolation, 'container' for Docker/VM).
+        memory_limit_mb: Maximum resident memory allowed for the executed process (>= 32 MB).
+        cpu_limit_seconds: Maximum CPU execution time permitted.
+        allow_network: Whether network access is permitted during execution (default False).
+        max_output_bytes: Buffer limit for stdout/stderr to prevent memory exhaustion (default 64 KB).
+    """
 
     mode: str = "process"  # "process" or "container"
     memory_limit_mb: int = 512
@@ -54,7 +99,14 @@ class SandboxConfig:
 
 @dataclass
 class MeasurementConfig:
-    """Energy and telemetry sampling configuration."""
+    """Telemetry sampling, calibration, and power monitoring settings.
+
+    Attributes:
+        sampling_interval_ms: Interval between consecutive power/resource samples in milliseconds.
+        idle_calibration_seconds: Duration used to establish baseline idle power before runs.
+        record_cpu: Whether to sample host process CPU user/system times and memory.
+        record_gpu: Whether to query GPU telemetry (e.g., NVML power draw) when available.
+    """
 
     sampling_interval_ms: int = 50
     idle_calibration_seconds: float = 2.0
@@ -64,7 +116,16 @@ class MeasurementConfig:
 
 @dataclass
 class LeafConfig:
-    """Root configuration model for LEAF."""
+    """Root configuration container combining all benchmark configuration sections.
+
+    Attributes:
+        experiment: Metadata, modes, and reproducibility configuration.
+        paths: Directory storage paths.
+        budgets: Resource, iteration, and monetary budgets.
+        sandbox: Execution containment settings.
+        measurement: Telemetry and power meter sampling settings.
+        supported_languages: List of programming languages enabled for evaluation.
+    """
 
     experiment: ExperimentConfig = field(default_factory=ExperimentConfig)
     paths: PathsConfig = field(default_factory=PathsConfig)
@@ -77,7 +138,14 @@ class LeafConfig:
 
 
 def validate_config_dict(data: dict[str, Any]) -> list[str]:
-    """Validate a loaded configuration dictionary, returning any error messages."""
+    """Validate a loaded configuration dictionary against required bounds and types.
+
+    Args:
+        data: Raw dictionary typically parsed from a YAML configuration file.
+
+    Returns:
+        List of human-readable error descriptions. An empty list denotes a valid dictionary.
+    """
     errors: list[str] = []
 
     if not isinstance(data, dict):
@@ -127,7 +195,18 @@ def validate_config_dict(data: dict[str, Any]) -> list[str]:
 
 
 def load_config(path: str | Path) -> LeafConfig:
-    """Load, validate, and construct a LeafConfig from a YAML file."""
+    """Load, validate, and construct a LeafConfig instance from a YAML file.
+
+    Args:
+        path: Filesystem path to the YAML configuration file.
+
+    Returns:
+        Fully populated and validated LeafConfig instance.
+
+    Raises:
+        ConfigError: If the file does not exist, contains invalid YAML syntax,
+            or fails schema validation checks.
+    """
     config_path = Path(path)
     if not config_path.is_file():
         raise ConfigError(f"Configuration file not found: {config_path}")
@@ -192,7 +271,15 @@ def load_config(path: str | Path) -> LeafConfig:
 
 
 def validate_config_file(path: str | Path) -> tuple[bool, list[str]]:
-    """Validate a configuration file on disk, returning (is_valid, error_list)."""
+    """Validate a YAML configuration file stored on disk without raising an exception.
+
+    Args:
+        path: Filesystem path to the YAML file to validate.
+
+    Returns:
+        A tuple `(is_valid, error_list)`. `is_valid` is True if and only if
+        `error_list` is empty.
+    """
     config_path = Path(path)
     if not config_path.is_file():
         return False, [f"File not found: {config_path}"]

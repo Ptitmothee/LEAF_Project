@@ -1,4 +1,14 @@
-"""Command-line interface for the LEAF benchmark tool."""
+"""Command-line interface for the LEAF benchmark tool.
+
+Provides subcommands to inspect local execution environments, runtimes,
+compilers, and GPU telemetry, as well as validating benchmark configuration files.
+
+Typical usage:
+    ```bash
+    leaf info
+    leaf validate-config config/default_config.yaml
+    ```
+"""
 
 import argparse
 import platform
@@ -15,7 +25,14 @@ from leaf.core.logging import get_logger, setup_logging
 
 
 def get_compiler_info(binary_name: str) -> str | None:
-    """Check if a binary exists and attempt to query its version."""
+    """Check if a compiler or runtime binary exists on PATH and query its version string.
+
+    Args:
+        binary_name: Name of the executable (e.g. 'g++', 'javac', 'clang++').
+
+    Returns:
+        The first line of stdout/stderr from `binary --version`, or None if the binary is missing.
+    """
     path = shutil.which(binary_name)
     if not path:
         return None
@@ -34,7 +51,17 @@ def get_compiler_info(binary_name: str) -> str | None:
 
 
 def cmd_info(args: argparse.Namespace) -> int:
-    """Display environment details, detected runtimes, compilers, and hardware meters."""
+    """Display environment details, detected runtimes, compilers, and hardware meters.
+
+    Queries the local operating system, Python interpreter, available C++ and Java
+    toolchains, container engines (Docker/Podman), and NVIDIA GPU telemetry via `nvidia-smi`.
+
+    Args:
+        args: Parsed command-line arguments.
+
+    Returns:
+        Exit code 0 on success.
+    """
     logger = get_logger("cli")
     logger.info("Gathering environment information...")
 
@@ -102,7 +129,17 @@ def cmd_info(args: argparse.Namespace) -> int:
 
 
 def cmd_validate_config(args: argparse.Namespace) -> int:
-    """Validate a given YAML configuration file."""
+    """Validate a benchmark YAML configuration file against schema constraints.
+
+    Loads the specified YAML file, runs structural validation checks, and prints
+    either a confirmation summary or a list of specific errors.
+
+    Args:
+        args: Parsed command-line arguments containing `args.config` path.
+
+    Returns:
+        0 if the configuration is fully valid; 1 if errors are encountered.
+    """
     config_path = Path(args.config)
     logger = get_logger("cli")
     logger.info("Validating configuration file: %s", config_path)
@@ -129,7 +166,11 @@ def cmd_validate_config(args: argparse.Namespace) -> int:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    """Construct the command-line argument parser."""
+    """Construct the command-line argument parser with all supported subcommands and flags.
+
+    Returns:
+        An instantiated argparse.ArgumentParser configured for LEAF.
+    """
     parser = argparse.ArgumentParser(
         prog="leaf",
         description="LEAF: Low Energy AI Framework & Benchmark",
@@ -172,7 +213,16 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    """Main CLI execution entrypoint."""
+    """Main CLI execution entrypoint.
+
+    Parses command-line arguments, sets up logging, and executes the requested subcommand.
+
+    Args:
+        argv: Optional argument list; defaults to sys.argv[1:].
+
+    Returns:
+        Process exit code (0 for success, non-zero for error).
+    """
     parser = build_parser()
     args = parser.parse_args(argv)
 
