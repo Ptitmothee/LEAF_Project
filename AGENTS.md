@@ -17,6 +17,19 @@ Gradually build a reproducible research tool that compares the energy cost of AI
 7. **Never conceal an unknown.** An unavailable measurement must be `null`/`unknown`, never zero. Preserve failures and missing data. Always distinguish instrumental measurements, tool estimates, provider-reported values, derived approximations, and proxies.
 8. **At the end of each increment:** summarize what was done, which files were changed, which tests were actually run, the remaining limitations, and the recommended next step. Do not launch a large experiment without first specifying its costs and budgets. Write a clear commit message to incrementally update the project on github.
 
+## Python Environment and Dependency Management
+
+* Use `uv` to manage the project's Python version, dependencies, virtual environment, and lockfile.
+* Treat `pyproject.toml`, `uv.lock`, and `.python-version` as controlled project configuration files.
+* Never install project dependencies globally or modify the system Python installation.
+* Do not add, remove, or upgrade dependencies without first explaining the technical need and the expected impact.
+* Do not update `uv.lock` merely to resolve an environment issue. Diagnose the issue first.
+* After an approved dependency change, update the lockfile and verify that the environment can be reconstructed using `uv sync --locked`.
+* Keep `.venv/` out of version control.
+* Run project commands through `uv run` whenever practical.
+* Before completing a task, check whether `pyproject.toml`, `uv.lock`, or `.python-version` changed. Explain any changes in the final summary.
+* Do not claim that the environment is reproducible unless the locked installation and the relevant tests have been verified.
+
 ## Scientific Invariants
 
 ### Inference energy and execution energy are not the same thing
